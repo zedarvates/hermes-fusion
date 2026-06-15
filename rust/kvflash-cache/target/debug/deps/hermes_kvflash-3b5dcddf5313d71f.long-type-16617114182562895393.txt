@@ -1,0 +1,1 @@
+futures_util::future::MapErr<impl futures_util::Future<Output = Result<HybridCache, anyhow::Error>>, {closure@src/lib.rs:482:26: 482:29}>

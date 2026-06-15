@@ -1,0 +1,14 @@
+/home/redgamer/hermes-fusion/rust/kvflash-cache/target/debug/deps/pyo3_build_config-3e48aa5a45647076.d: /home/redgamer/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.21.2/src/lib.rs /home/redgamer/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.21.2/src/errors.rs /home/redgamer/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.21.2/src/impl_.rs /home/redgamer/hermes-fusion/rust/kvflash-cache/target/debug/build/pyo3-build-config-6a02513aacbb8d8a/out/pyo3-build-config-file.txt /home/redgamer/hermes-fusion/rust/kvflash-cache/target/debug/build/pyo3-build-config-6a02513aacbb8d8a/out/pyo3-build-config.txt
+
+/home/redgamer/hermes-fusion/rust/kvflash-cache/target/debug/deps/libpyo3_build_config-3e48aa5a45647076.rlib: /home/redgamer/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.21.2/src/lib.rs /home/redgamer/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.21.2/src/errors.rs /home/redgamer/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.21.2/src/impl_.rs /home/redgamer/hermes-fusion/rust/kvflash-cache/target/debug/build/pyo3-build-config-6a02513aacbb8d8a/out/pyo3-build-config-file.txt /home/redgamer/hermes-fusion/rust/kvflash-cache/target/debug/build/pyo3-build-config-6a02513aacbb8d8a/out/pyo3-build-config.txt
+
+/home/redgamer/hermes-fusion/rust/kvflash-cache/target/debug/deps/libpyo3_build_config-3e48aa5a45647076.rmeta: /home/redgamer/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.21.2/src/lib.rs /home/redgamer/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.21.2/src/errors.rs /home/redgamer/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.21.2/src/impl_.rs /home/redgamer/hermes-fusion/rust/kvflash-cache/target/debug/build/pyo3-build-config-6a02513aacbb8d8a/out/pyo3-build-config-file.txt /home/redgamer/hermes-fusion/rust/kvflash-cache/target/debug/build/pyo3-build-config-6a02513aacbb8d8a/out/pyo3-build-config.txt
+
+/home/redgamer/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.21.2/src/lib.rs:
+/home/redgamer/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.21.2/src/errors.rs:
+/home/redgamer/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.21.2/src/impl_.rs:
+/home/redgamer/hermes-fusion/rust/kvflash-cache/target/debug/build/pyo3-build-config-6a02513aacbb8d8a/out/pyo3-build-config-file.txt:
+/home/redgamer/hermes-fusion/rust/kvflash-cache/target/debug/build/pyo3-build-config-6a02513aacbb8d8a/out/pyo3-build-config.txt:
+
+# env-dep:CARGO_PKG_VERSION=0.21.2
+# env-dep:OUT_DIR=/home/redgamer/hermes-fusion/rust/kvflash-cache/target/debug/build/pyo3-build-config-6a02513aacbb8d8a/out
