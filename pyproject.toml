@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hermes-fusion"
+version = "1.0.0"
+description = "Multi-LLM Fusion Engine for Hermes Agent — local cluster + cloud orchestration"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Sylvain Galliez", email = "sylvain@galliez.dev"}]
+maintainers = [{name = "Hermes Agent"}]
+keywords = ["hermes", "llm", "fusion", "multi-model", "reasoning", "local-first", "ai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+requires-python = ">=3.11"
+dependencies = []  # stdlib-only core
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2", "pytest-asyncio>=0.23", "ruff>=0.5", "mypy>=1.8"]
+qdrant = ["qdrant-client>=1.11"]
+cloud = ["openai>=1.30", "anthropic>=0.25"]
+
+[project.scripts]
+hermes-fusion = "hermes_fusion.cli:cli_entry"
+
+[project.urls]
+Homepage = "https://github.com/zedarvates/hermes-fusion"
+Repository = "https://github.com/zedarvates/hermes-fusion"
+Issues = "https://github.com/zedarvates/hermes-fusion/issues"
+Documentation = "https://github.com/zedarvates/hermes-fusion/docs"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["hermes_fusion*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I", "UP", "B", "C4", "PTH", "TRY", "SIM", "TID", "ARG"]
+ignore = ["S101", "PTH123"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]

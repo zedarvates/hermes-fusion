@@ -1,0 +1,56 @@
+# Hermes Fusion Configuration
+# Copy to config.toml and customize
+
+[fusion]
+# Global fusion engine settings
+default_strategy = "weighted_vote"    # weighted_vote | handoff | cot_consensus | best_of_n
+max_parallel_providers = 3            # Max concurrent provider calls
+timeout_seconds = 120                 # Per-provider timeout
+semantic_cache_enabled = true         # Enable Qdrant semantic cache
+cache_ttl_hours = 24                  # Cache entry TTL
+
+[providers.localai]
+# LocalAI (EUREKAI:8080) - Gemma, Whisper, TTS
+base_url = "http://192.168.1.47:8080"
+models = ["gemma-4-e2b-it:latest", "gpt-4o", "whisper-1", "tts-1"]
+timeout = 60
+
+[providers.hailo]
+# Hailo-8 AI Accelerator (EUREKAI:8767) - Vision
+host = "192.168.1.47"
+port = 8767
+models = ["resnet18", "yolov8", "ocr"]
+timeout = 30
+
+[providers.qdrant]
+# Qdrant Vector DB (EUREKAI:6333) - Semantic Cache
+url = "http://192.168.1.47:6333"
+collection = "hermes_fusion_cache"
+vector_size = 768
+
+[providers.cloud.xai]
+# xAI Grok (OpenAI-compatible API)
+api_key_env = "XAI_API_KEY"
+model = "grok-3"
+weight = 1.5
+timeout = 60
+
+[providers.cloud.openai]
+# OpenAI GPT-4o + Embeddings
+api_key_env = "OPENAI_API_KEY"
+model = "gpt-4o"
+weight = 1.2
+timeout = 60
+
+[providers.cloud.anthropic]
+# Anthropic Claude 3.5 Sonnet
+api_key_env = "ANTHROPIC_API_KEY"
+model = "claude-3-5-sonnet"
+weight = 1.3
+timeout = 60
+
+# Custom cloud providers (optional)
+# [providers.cloud.custom.my-provider]
+# api_key_env = "MY_PROVIDER_KEY"
+# model = "my-model"
+# weight = 1.0
