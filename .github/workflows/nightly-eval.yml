@@ -1,0 +1,133 @@
+name: Nightly Eval Harness
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:
+    inputs:
+      benchmarks:
+        description: 'Comma-separated benchmarks to run (mmlu,gsm8k,humaneval,arc)'
+        required: false
+        default: 'mmlu,gsm8k,humaneval,arc'
+      providers:
+        description: 'Comma-separated provider:model pairs (provider/model)'
+        required: false
+        default: 'openrouter/anthropic/claude-sonnet-4,localai/gemma-4-e2b-it'
+      limit:
+        description: 'Max questions per benchmark (null for all)'
+        required: false
+        default: '100'
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+          pip install pytest pytest-asyncio
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run MMLU benchmark
+        if: contains(github.event.inputs.benchmarks, 'mmlu') || github.event_name == 'schedule'
+        run: |
+          python3 -m hermes_fusion.cli eval run mmlu \
+            --provider openrouter \
+            --model anthropic/claude-sonnet-4 \
+            --limit ${{ github.event.inputs.limit || 100 }} \
+            --task-type complex_reasoning
+
+      - name: Run GSM8K benchmark
+        if: contains(github.event.inputs.benchmarks, 'gsm8k') || github.event_name == 'schedule'
+        run: |
+          python3 -m hermes_fusion.cli eval run gsm8k \
+            --provider openrouter \
+            --model anthropic/claude-sonnet-4 \
+            --limit ${{ github.event.inputs.limit || 100 }} \
+            --task-type complex_reasoning
+
+      - name: Run HumanEval benchmark
+        if: contains(github.event.inputs.benchmarks, 'humaneval') || github.event_name == 'schedule'
+        run: |
+          python3 -m hermes_fusion.cli eval run humaneval \
+            --provider openrouter \
+            --model anthropic/claude-sonnet-4 \
+            --limit ${{ github.event.inputs.limit || 50 }} \
+            --task-type code_review
+
+      - name: Run ARC benchmark
+        if: contains(github.event.inputs.benchmarks, 'arc') || github.event_name == 'schedule'
+        run: |
+          python3 -m hermes_fusion.cli eval run arc \
+            --provider openrouter \
+            --model anthropic/claude-sonnet-4 \
+            --limit ${{ github.event.inputs.limit || 50 }} \
+            --task-type complex_reasoning
+
+      - name: Check for regressions
+        run: |
+          python3 -m hermes_fusion.cli eval report
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results-${{ github.sha }}
+          path: ~/.hermes_fusion/eval_results/
+          retention-days: 30
+
+      - name: Comment on PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const resultsDir = process.env.HOME + '/.hermes_fusion/eval_results';
+            if (fs.existsSync(resultsDir)) {
+              const files = fs.readdirSync(resultsDir).filter(f => f.endsWith('.json'));
+              let comment = '## 📊 Eval Harness Results\n\n';
+              for (const file of files.slice(-10)) {
+                const data = JSON.parse(fs.readFileSync(path.join(resultsDir, file), 'utf8'));
+                comment += `**${data.benchmark_name}** on ${data.provider}/${data.model}\n`;
+                comment += `- Accuracy: ${(data.accuracy * 100).toFixed(1)}%\n`;
+                comment += `- Cost: $${data.total_cost_usd.toFixed(4)}\n`;
+                comment += `- Latency: ${data.avg_latency_ms.toFixed(0)}ms avg\n\n`;
+              }
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+      - name: Create regression issue
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            const output = execSync('python3 -m hermes_fusion.cli eval report', { encoding: 'utf8' });
+            if (output.includes('regression') || output.includes('REGRESSION')) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🚨 Regression detected in nightly eval',
+                body: `Nightly eval detected performance regressions:\n\n\`\`\`\n${output}\n\`\`\``,
+                labels: ['regression', 'eval', 'high-priority']
+              });
+            }

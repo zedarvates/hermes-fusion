@@ -82,6 +82,53 @@ def build_parser() -> argparse.ArgumentParser:
     # Router command
     router_parser = subparsers.add_parser("router", help="Model router commands")
     router_sub = router_parser.add_subparsers(dest="router_action", required=True)
+
+    # Eval command
+    eval_parser = subparsers.add_parser("eval", help="Benchmark evaluation")
+    eval_sub = eval_parser.add_subparsers(dest="eval_action", required=True)
+
+    run_parser = eval_sub.add_parser("run", help="Run a benchmark")
+    run_parser.add_argument(
+        "benchmark",
+        type=str,
+        choices=["mmlu", "gsm8k", "humaneval", "arc"],
+        help="Benchmark to run",
+    )
+    run_parser.add_argument(
+        "--provider", "-p",
+        type=str,
+        required=True,
+        help="Provider to test (e.g., openrouter, localai, minimax)",
+    )
+    run_parser.add_argument(
+        "--model", "-m",
+        type=str,
+        required=True,
+        help="Model to test (e.g., anthropic/claude-sonnet-4)",
+    )
+    run_parser.add_argument(
+        "--limit", "-l",
+        type=int,
+        default=None,
+        help="Limit number of questions (default: all)",
+    )
+    run_parser.add_argument(
+        "--split",
+        type=str,
+        default="test",
+        choices=["test", "train", "validation"],
+        help="Dataset split (default: test)",
+    )
+    run_parser.add_argument(
+        "--task-type",
+        type=str,
+        default="complex_reasoning",
+        help="Task type for routing (default: complex_reasoning)",
+    )
+
+    eval_sub.add_parser("list", help="List saved benchmark results")
+    eval_sub.add_parser("report", help="Show regression report")
+    eval_sub.add_parser("compare", help="Compare two benchmark runs")
     
     route_parser = router_sub.add_parser("route", help="Get routing decision for a prompt")
     route_parser.add_argument("prompt", type=str, help="Prompt to route")
@@ -268,6 +315,77 @@ async def run_metrics(args) -> int:
         return 1
 
 
+async def run_eval(args) -> int:
+    """Execute eval commands."""
+    engine = await create_engine_from_config(args.config)
+
+    try:
+        if args.eval_action == "run":
+            from hermes_fusion.eval.runner import EvalRunner
+
+            runner = EvalRunner(engine)
+            suite = await runner.run_benchmark(
+                benchmark_name=args.benchmark,
+                provider=args.provider,
+                model=args.model,
+                limit=args.limit,
+                split=args.split,
+                task_type=args.task_type,
+            )
+
+            print(f"\n✅ Benchmark Complete: {suite.suite_id}")
+            print(f"   Accuracy: {suite.accuracy:.2%} ({suite.correct}/{suite.total_questions})")
+            print(f"   Avg Latency: {suite.avg_latency_ms:.0f}ms")
+            print(f"   Total Cost: ${suite.total_cost_usd:.4f}")
+            print(f"   Results saved to ~/.hermes_fusion/eval_results/{suite.suite_id}.json")
+            return 0
+
+        elif args.eval_action == "list":
+            from hermes_fusion.eval.runner import EvalRunner
+
+            runner = EvalRunner(engine)
+            suites = runner.list_suites()
+
+            if not suites:
+                print("No benchmark results found.")
+                return 0
+
+            print(f"{'Suite ID':<50} {'Benchmark':<12} {'Provider':<12} {'Model':<30} {'Acc':>8} {'Cost':>10}")
+            print("-" * 130)
+            for s in suites:
+                model = s["model"][:28] + ".." if len(s["model"]) > 30 else s["model"]
+                print(f"{s['suite_id']:<50} {s['benchmark_name']:<12} {s['provider']:<12} {model:<30} {s['accuracy']:>7.1%} ${s['total_cost_usd']:>9.4f}")
+            return 0
+
+        elif args.eval_action == "report":
+            from hermes_fusion.eval.regression import RegressionDetector
+
+            detector = RegressionDetector()
+            alerts = detector.check_all_regressions()
+
+            if not alerts:
+                print("✅ No regressions detected.")
+                return 0
+
+            print(f"⚠️  {len(alerts)} regression(s) detected:\n")
+            for alert in alerts:
+                status = "🔴 SIGNIFICANT" if alert.significant else "🟡 WARNING"
+                print(f"  {status}: {alert.benchmark_name} / {alert.provider} / {alert.model}")
+                print(f"    Current: {alert.current_accuracy:.2%}, Baseline: {alert.baseline_accuracy:.2%}")
+                print(f"    Delta: {alert.delta:+.2%}, p-value: {alert.p_value:.4f}")
+                print()
+            return 0
+
+        elif args.eval_action == "compare":
+            print("Compare command not yet implemented. Use 'eval list' to see runs.")
+            return 1
+
+        return 0
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+
 async def run_cost(args) -> int:
     """Show cost metrics."""
     engine = await create_engine_from_config(args.config)
@@ -419,6 +537,7 @@ async def main(argv: list[str] | None = None) -> int:
         "metrics": run_metrics,
         "cost": run_cost,
         "router": run_router,
+        "eval": run_eval,
     }
     
     try:
