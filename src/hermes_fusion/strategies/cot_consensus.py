@@ -1,9 +1,13 @@
 """Chain-of-Thought Consensus fusion strategy - finds agreement among reasoning traces."""
 
-from typing import Any
 from collections import Counter
 
-from hermes_fusion.strategies.base import FusionStrategy, FusionResult, ProviderResponse, normalize_answer
+from hermes_fusion.strategies.base import (
+    FusionResult,
+    FusionStrategy,
+    ProviderResponse,
+    normalize_answer,
+)
 
 
 class CoTConsensusStrategy(FusionStrategy):

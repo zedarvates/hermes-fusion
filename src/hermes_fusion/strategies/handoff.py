@@ -1,8 +1,7 @@
 """Handoff fusion strategy - sequential fallback from primary to backup providers."""
 
-from typing import Any
 
-from hermes_fusion.strategies.base import FusionStrategy, FusionResult, ProviderResponse
+from hermes_fusion.strategies.base import FusionResult, FusionStrategy, ProviderResponse
 
 
 class HandoffStrategy(FusionStrategy):

@@ -1,9 +1,11 @@
 """Tests for Cloud providers (xAI, OpenAI, Anthropic)."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from hermes_fusion.providers.cloud import XAIProvider, OpenAIProvider, AnthropicProvider
+
+import pytest
+
 from hermes_fusion.config import CloudConfig, CloudProviderConfig
+from hermes_fusion.providers.cloud import AnthropicProvider, OpenAIProvider, XAIProvider
 
 
 @pytest.fixture

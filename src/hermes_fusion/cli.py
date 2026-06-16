@@ -64,6 +64,9 @@ def build_parser() -> argparse.ArgumentParser:
     # Strategies command
     subparsers.add_parser("strategies", help="List available fusion strategies")
 
+    # Metrics command
+    subparsers.add_parser("metrics", help="Output Prometheus metrics")
+
     return parser
 
 
@@ -196,12 +199,27 @@ async def run_cache_cleanup(args) -> int:
 async def run_strategies(args) -> int:
     """List available strategies."""
     engine = await create_engine_from_config(args.config)
-    
+
     try:
         strategies = engine.get_available_strategies()
         print("Available fusion strategies:")
         for s in strategies:
             print(f"  - {s}")
+        return 0
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+
+async def run_metrics(args) -> int:
+    """Output Prometheus metrics."""
+    engine = await create_engine_from_config(args.config)
+
+    try:
+        metrics_output = engine.get_prometheus_metrics()
+        content_type = engine.get_metrics_content_type()
+        # Print raw metrics for scraping
+        sys.stdout.buffer.write(metrics_output)
         return 0
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -220,6 +238,7 @@ async def main(argv: list[str] | None = None) -> int:
             "cleanup": run_cache_cleanup,
         },
         "strategies": run_strategies,
+        "metrics": run_metrics,
     }
     
     try:

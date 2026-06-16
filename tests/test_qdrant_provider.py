@@ -1,9 +1,11 @@
 """Tests for Qdrant semantic cache provider."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from hermes_fusion.providers.qdrant import QdrantProvider
+
+import pytest
+
 from hermes_fusion.config import QdrantConfig
+from hermes_fusion.providers.qdrant import QdrantProvider
 
 
 @pytest.fixture

@@ -1,8 +1,12 @@
 """Best-of-N fusion strategy - uses a judge model to pick the best answer."""
 
-from typing import Any
 
-from hermes_fusion.strategies.base import FusionStrategy, FusionResult, ProviderResponse, normalize_answer
+from hermes_fusion.strategies.base import (
+    FusionResult,
+    FusionStrategy,
+    ProviderResponse,
+    normalize_answer,
+)
 
 
 class BestOfNStrategy(FusionStrategy):

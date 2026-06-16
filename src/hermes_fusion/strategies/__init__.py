@@ -1,11 +1,15 @@
 """Fusion Strategies - pluggable methods for combining multi-LLM responses."""
 
-from hermes_fusion.strategies.base import FusionStrategy, FusionResult, ProviderResponse, normalize_answer
-from hermes_fusion.strategies.weighted_vote import WeightedVoteStrategy
+from hermes_fusion.strategies.base import (
+    FusionResult,
+    FusionStrategy,
+    ProviderResponse,
+    normalize_answer,
+)
 from hermes_fusion.strategies.best_of_n import BestOfNStrategy
 from hermes_fusion.strategies.cot_consensus import CoTConsensusStrategy
 from hermes_fusion.strategies.handoff import HandoffStrategy
-
+from hermes_fusion.strategies.weighted_vote import WeightedVoteStrategy
 
 # Strategy registry
 _STRATEGIES = {

@@ -26,6 +26,15 @@ dependencies = []  # stdlib-only core
 dev = ["pytest>=8.2", "pytest-asyncio>=0.23", "ruff>=0.5", "mypy>=1.8"]
 qdrant = ["qdrant-client>=1.11"]
 cloud = ["openai>=1.30", "anthropic>=0.25"]
+observability = [
+    "prometheus-client>=0.19",
+    "structlog>=24.1",
+    "opentelemetry-api>=1.21",
+    "opentelemetry-sdk>=1.21",
+    "opentelemetry-exporter-prometheus>=0.42",
+    "opentelemetry-instrumentation-asyncio>=0.42",
+]
+all = ["qdrant", "cloud", "observability"]
 
 [project.scripts]
 hermes-fusion = "hermes_fusion.cli:cli_entry"

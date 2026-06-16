@@ -1,12 +1,14 @@
 """Tests for Fusion Strategies."""
 
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-from hermes_fusion.strategies.base import FusionStrategy, FusionResult, ProviderResponse
-from hermes_fusion.strategies.weighted_vote import WeightedVoteStrategy
+
+from hermes_fusion.strategies.base import ProviderResponse
 from hermes_fusion.strategies.best_of_n import BestOfNStrategy
 from hermes_fusion.strategies.cot_consensus import CoTConsensusStrategy
 from hermes_fusion.strategies.handoff import HandoffStrategy
+from hermes_fusion.strategies.weighted_vote import WeightedVoteStrategy
 
 
 class TestWeightedVoteStrategy:

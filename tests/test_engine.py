@@ -1,14 +1,12 @@
 """Tests for Fusion Engine - main orchestration layer."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
+from hermes_fusion.config import FusionConfig, FusionSettings, LocalAIConfig, ProvidersConfig
 from hermes_fusion.engine import FusionEngine
-from hermes_fusion.config import FusionConfig, FusionSettings, ProvidersConfig, LocalAIConfig
 from hermes_fusion.providers.base import ProviderResponse
-from hermes_fusion.providers.localai import LocalAIProvider
-from hermes_fusion.providers.cloud import XAIProvider, OpenAIProvider
-from hermes_fusion.providers.qdrant import QdrantProvider
-from hermes_fusion.strategies import get_strategy
 
 
 class MockProvider:
@@ -262,7 +260,6 @@ class TestFusionEngineFactory:
     @pytest.mark.asyncio
     async def test_create_from_config(self, fusion_config, mock_qdrant):
         # This tests the factory pattern if we add it
-        from hermes_fusion.engine import create_engine
         
         # Would need actual provider implementations
         # Skipping for now - requires real clients

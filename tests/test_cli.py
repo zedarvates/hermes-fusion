@@ -1,10 +1,10 @@
 """Tests for CLI entry point."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from hermes_fusion.cli import main, build_parser
-from hermes_fusion.config import FusionConfig
-from hermes_fusion.engine import FusionEngine
+
+import pytest
+
+from hermes_fusion.cli import build_parser, main
 
 
 class TestCLI:

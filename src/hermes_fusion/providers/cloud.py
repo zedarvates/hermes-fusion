@@ -1,7 +1,7 @@
 """Cloud LLM providers (xAI Grok, OpenAI GPT-4o, Anthropic Claude)."""
 
 import os
-from typing import Any
+
 from hermes_fusion.config import CloudConfig
 from hermes_fusion.providers.base import Provider, ProviderResponse
 
