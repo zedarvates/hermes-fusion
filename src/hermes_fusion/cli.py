@@ -8,6 +8,8 @@ from pathlib import Path
 from hermes_fusion.config import FusionConfig
 from hermes_fusion.engine import FusionEngine
 from hermes_fusion.model_router import TaskType, RoutingPolicy
+from hermes_fusion.templates import TemplateType
+from hermes_fusion.cli_template import run_template
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -129,7 +131,64 @@ def build_parser() -> argparse.ArgumentParser:
     eval_sub.add_parser("list", help="List saved benchmark results")
     eval_sub.add_parser("report", help="Show regression report")
     eval_sub.add_parser("compare", help="Compare two benchmark runs")
-    
+
+    # Template command
+    template_parser = subparsers.add_parser("template", help="Prompt template management")
+    template_sub = template_parser.add_subparsers(dest="template_action", required=True)
+
+    create_parser = template_sub.add_parser("create", help="Create a new template")
+    create_parser.add_argument("name", type=str, help="Template name")
+    create_parser.add_argument("content", type=str, help="Template content (Jinja2)")
+    create_parser.add_argument("--type", type=str, default="user", choices=[t.value for t in TemplateType], help="Template type")
+    create_parser.add_argument("--description", type=str, default="", help="Description")
+    create_parser.add_argument("--tags", type=str, nargs="+", default=[], help="Tags")
+    create_parser.add_argument("--file", "-f", type=Path, help="Read content from file")
+
+    list_parser = template_sub.add_parser("list", help="List templates")
+
+    show_parser = template_sub.add_parser("show", help="Show template details")
+    show_parser.add_argument("name", type=str)
+
+    render_parser = template_sub.add_parser("render", help="Render a template")
+    render_parser.add_argument("name", type=str)
+
+    delete_parser = template_sub.add_parser("delete", help="Delete a template")
+    delete_parser.add_argument("name", type=str)
+    delete_parser.add_argument("--version", type=str)
+
+    versions_parser = template_sub.add_parser("versions", help="List template versions")
+    versions_parser.add_argument("name", type=str)
+
+    # A/B test commands
+    ab_parser = template_sub.add_parser("ab-test", help="A/B test management")
+    ab_sub = ab_parser.add_subparsers(dest="ab_action", required=True)
+
+    ab_create = ab_sub.add_parser("create", help="Create A/B test")
+    ab_create.add_argument("name", type=str)
+    ab_create.add_argument("description", type=str)
+    ab_create.add_argument("--variant-a", type=str, required=True)
+    ab_create.add_argument("--variant-b", type=str, required=True)
+    ab_create.add_argument("--split", type=float, default=0.5)
+
+    ab_sub.add_parser("list", help="List A/B tests")
+
+    ab_show = ab_sub.add_parser("show", help="Show A/B test details")
+    ab_show.add_argument("test_id", type=str)
+
+    ab_stop = ab_sub.add_parser("stop", help="Stop A/B test")
+    ab_stop.add_argument("test_id", type=str)
+    ab_stop.add_argument("--winner", type=str, choices=["A", "B"])
+
+    # Optimization commands
+    opt_parser = template_sub.add_parser("optimize", help="Create provider overrides for template")
+    opt_parser.add_argument("name", type=str)
+    opt_parser.add_argument("--providers", type=str, nargs="+", default=[])
+
+    select_parser = template_sub.add_parser("select", help="Select best template for task/provider")
+    select_parser.add_argument("task_type", type=str)
+    select_parser.add_argument("--provider", type=str, required=True)
+    select_parser.add_argument("--model", type=str, required=True)
+
     route_parser = router_sub.add_parser("route", help="Get routing decision for a prompt")
     route_parser.add_argument("prompt", type=str, help="Prompt to route")
     route_parser.add_argument(
@@ -538,6 +597,7 @@ async def main(argv: list[str] | None = None) -> int:
         "cost": run_cost,
         "router": run_router,
         "eval": run_eval,
+        "template": run_template,
     }
     
     try:
