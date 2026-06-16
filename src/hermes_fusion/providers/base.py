@@ -12,6 +12,8 @@ class ProviderResponse:
     model: str
     provider: str
     tokens_used: int = 0
+    tokens_prompt: int = 0
+    tokens_completion: int = 0
     latency_ms: int = 0
     raw: dict[str, Any] = None
 

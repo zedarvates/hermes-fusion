@@ -7,6 +7,7 @@ from pathlib import Path
 
 from hermes_fusion.config import FusionConfig
 from hermes_fusion.engine import FusionEngine
+from hermes_fusion.model_router import TaskType, RoutingPolicy
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -66,6 +67,48 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Metrics command
     subparsers.add_parser("metrics", help="Output Prometheus metrics")
+
+    # Cost command
+    cost_parser = subparsers.add_parser("cost", help="Cost tracking and budgets")
+    cost_sub = cost_parser.add_subparsers(dest="cost_action", required=True)
+    
+    cost_summary = cost_sub.add_parser("summary", help="Show cost summary")
+    cost_summary.add_argument("--by-provider", action="store_true", help="Break down by provider")
+    cost_summary.add_argument("--by-model", action="store_true", help="Break down by model")
+    
+    cost_sub.add_parser("budget", help="Show budget status")
+    cost_sub.add_parser("daily", help="Show daily costs")
+
+    # Router command
+    router_parser = subparsers.add_parser("router", help="Model router commands")
+    router_sub = router_parser.add_subparsers(dest="router_action", required=True)
+    
+    route_parser = router_sub.add_parser("route", help="Get routing decision for a prompt")
+    route_parser.add_argument("prompt", type=str, help="Prompt to route")
+    route_parser.add_argument(
+        "--policy", "-p",
+        type=str,
+        choices=[p.value for p in RoutingPolicy],
+        help="Routing policy (default: from config)",
+    )
+    route_parser.add_argument(
+        "--cost-quality", type=int, choices=range(0, 11),
+        help="Cost/quality tradeoff 0-10 (0=quality, 10=cost)",
+    )
+    route_parser.add_argument("--session-id", type=str, help="Session ID for stickiness")
+    route_parser.add_argument("--allowed-models", type=str, nargs="+", help="Restrict to models")
+    
+    router_sub.add_parser("stats", help="Show routing statistics")
+    route_sub = router_sub.add_parser("models", help="List models for a task type")
+    route_sub.add_argument(
+        "--task-type", "-t",
+        type=str,
+        choices=[t.value for t in TaskType],
+        default="general",
+        help="Task type to filter models",
+    )
+    clear_parser = router_sub.add_parser("clear-session", help="Clear session stickiness")
+    clear_parser.add_argument("session_id", type=str, help="Session ID to clear")
 
     return parser
 
@@ -217,9 +260,144 @@ async def run_metrics(args) -> int:
 
     try:
         metrics_output = engine.get_prometheus_metrics()
-        content_type = engine.get_metrics_content_type()
         # Print raw metrics for scraping
         sys.stdout.buffer.write(metrics_output)
+        return 0
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+
+async def run_cost(args) -> int:
+    """Show cost metrics."""
+    engine = await create_engine_from_config(args.config)
+
+    try:
+        if args.cost_action == "summary":
+            metrics = engine.get_cost_metrics()
+            if not metrics:
+                print("Cost tracker not enabled")
+                return 1
+            print(f"Total Cost: ${metrics.total_cost_usd:.4f}")
+            print(f"Total Tokens: {metrics.total_tokens:,}")
+            print(f"  Input: {metrics.total_input_tokens:,}")
+            print(f"  Output: {metrics.total_output_tokens:,}")
+            print(f"Requests: {metrics.request_count}")
+            print(f"Cached: {metrics.cached_requests}")
+            print()
+            
+            if args.by_provider:
+                for provider, data in metrics.get_metrics_by_provider().items():
+                    print(f"  {provider}: ${data['cost_usd']:.4f} ({data['total_tokens']:,} tokens)")
+            
+            if args.by_model:
+                for model, data in metrics.get_metrics_by_model().items():
+                    pricing = data['pricing_per_1k']
+                    print(f"  {model}: ${data['cost_usd']:.4f} ({data['total_tokens']:,} tokens) @ ${pricing[0]}/${pricing[1]} per 1K")
+        
+        elif args.cost_action == "budget":
+            if not engine._cost_tracker:
+                print("Cost tracker not enabled")
+                return 1
+            for budget in engine._cost_tracker.budgets:
+                metrics = engine.get_cost_metrics()
+                if metrics:
+                    status = metrics.get_budget_status(budget)
+                    print(f"Budget ({budget.period}): ${status['spent']:.2f} / ${status['budget_limit']:.2f} ({status['utilization']:.1%})")
+                    if status['alert_triggered']:
+                        print(f"  ⚠️  ALERT: Over {budget.alert_threshold:.0%} threshold!")
+        
+        elif args.cost_action == "daily":
+            if not engine._cost_tracker:
+                print("Cost tracker not enabled")
+                return 1
+            metrics = engine.get_cost_metrics()
+            if metrics:
+                print("Daily costs:")
+                for day, cost in sorted(metrics.daily_costs.items()):
+                    print(f"  {day}: ${cost:.4f}")
+        
+        return 0
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+
+async def run_router(args) -> int:
+    """Execute router commands."""
+    engine = await create_engine_from_config(args.config)
+    
+    # Start model router if available
+    if engine._model_router:
+        await engine.start_model_router()
+    
+    try:
+        if args.router_action == "route":
+            if not engine._model_router:
+                print("Model router not enabled in config")
+                return 1
+            
+            policy = RoutingPolicy(args.policy) if args.policy else None
+            decision = await engine._model_router.route(
+                prompt=args.prompt,
+                policy=policy,
+                cost_quality_tradeoff=args.cost_quality,
+                session_id=args.session_id,
+                allowed_models=args.allowed_models,
+            )
+            
+            print(f"Model: {decision.model_id}")
+            print(f"Provider: {decision.provider_name}")
+            print(f"Task Type: {decision.task_type.value}")
+            print(f"Policy: {decision.policy.value}")
+            print(f"Confidence: {decision.confidence:.2%}")
+            print(f"Session ID: {decision.session_id or 'N/A'}")
+            print(f"Fallbacks: {', '.join(f'{f.name}:{f.model}' for f in decision.fallbacks) or 'None'}")
+            
+        elif args.router_action == "stats":
+            if not engine._model_router:
+                print("Model router not enabled in config")
+                return 1
+            
+            stats = engine._model_router.get_routing_stats()
+            print(f"Total Routes: {stats['total_routes']}")
+            if stats['total_routes'] > 0:
+                print(f"Success Rate: {stats['success_rate']:.1%}")
+                print(f"Avg Latency: {stats['avg_latency_ms']:.0f}ms")
+                print(f"Avg Cost: ${stats['avg_cost_usd']:.4f}")
+                print()
+                print("Model Distribution:")
+                for model, count in stats['model_distribution'].items():
+                    print(f"  {model}: {count}")
+                print()
+                print("Provider Distribution:")
+                for provider, count in stats['provider_distribution'].items():
+                    print(f"  {provider}: {count}")
+                print()
+                print("Task Distribution:")
+                for task, count in stats['task_distribution'].items():
+                    print(f"  {task}: {count}")
+        
+        elif args.router_action == "models":
+            if not engine._model_router:
+                print("Model router not enabled in config")
+                return 1
+            
+            task_type = TaskType(args.task_type)
+            models = engine._model_router.get_models_for_task(task_type)
+            print(f"Models for {task_type.value}:")
+            for m in models:
+                for p in m.providers:
+                    print(f"  {m.model_id} via {p.name} (quality={p.avg_quality_score:.2f}, cost={p.cost_per_1k_input:.4f}/${p.cost_per_1k_output:.4f})")
+        
+        elif args.router_action == "clear-session":
+            if not engine._model_router:
+                print("Model router not enabled in config")
+                return 1
+            
+            engine._model_router.clear_session(args.session_id)
+            print(f"Cleared session: {args.session_id}")
+        
         return 0
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -239,6 +417,8 @@ async def main(argv: list[str] | None = None) -> int:
         },
         "strategies": run_strategies,
         "metrics": run_metrics,
+        "cost": run_cost,
+        "router": run_router,
     }
     
     try:

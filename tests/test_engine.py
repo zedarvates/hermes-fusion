@@ -15,20 +15,21 @@ class MockProvider:
         self.name = name
         self._response_content = response_content
         self._healthy = healthy
-        self.chat = AsyncMock(side_effect=self._chat_impl)
-        self.health_check = AsyncMock(side_effect=self._health_impl)
-
-    async def _chat_impl(self, messages, model, **kwargs):
-        return ProviderResponse(
-            content=self._response_content,
-            provider=self.name,
-            model=model,
-            tokens_used=50,
-        )
-
-    async def _health_impl(self):
-        return self._healthy
-
+        import asyncio
+        async def chat_impl(messages, model, **kwargs):
+            return ProviderResponse(
+                content=self._response_content,
+                provider=self.name,
+                model=model,
+                tokens_used=50,
+            )
+        async def health_impl():
+            return self._healthy
+        
+        from unittest.mock import AsyncMock
+        self.chat = AsyncMock(side_effect=chat_impl)
+        self.health_check = AsyncMock(side_effect=health_impl)
+    
     async def embed(self, texts, model):
         return [[0.1] * 768] * len(texts)
 

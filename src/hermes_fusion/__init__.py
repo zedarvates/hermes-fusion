@@ -26,8 +26,26 @@ try:
 except ImportError:
     _observability_available = False
 
+# Cost Tracker (optional - requires `pip install hermes-fusion[observability]`)
+try:
+    from .cost_tracker import (
+        CLOUD_PROVIDERS,
+        DEFAULT_PRICING,
+        LOCAL_PROVIDERS,
+        Budget,
+        CostMetrics,
+        CostTracker,
+        TokenUsage,
+        create_cost_tracker_from_config,
+        estimate_cost,
+    )
+    _cost_tracker_available = True
+except ImportError:
+    _cost_tracker_available = False
+
 __all__ = [
     "__version__",
     "__author__",
     "_observability_available",
+    "_cost_tracker_available",
 ]

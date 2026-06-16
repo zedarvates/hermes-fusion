@@ -48,6 +48,19 @@ class CloudProviderConfig:
     model: str
     weight: float = 1.0
     timeout: int = 60
+    # Cost tracking (per 1K tokens)
+    input_cost_per_1k: float = 0.0
+    output_cost_per_1k: float = 0.0
+
+
+@dataclass(slots=True)
+class CostTrackerConfig:
+    """Cost tracker configuration."""
+    enabled: bool = True
+    persistence_path: str = "~/.hermes_fusion/costs.json"
+    auto_save_interval: int = 60
+    budgets: list[dict] = field(default_factory=list)  # [{"limit_usd": 10, "period": "daily", "alert_threshold": 0.8}]
+    custom_pricing: dict[str, list[float]] = field(default_factory=dict)  # {"model": [input_per_1k, output_per_1k]}
 
 
 @dataclass(slots=True)
@@ -59,6 +72,25 @@ class CloudConfig:
     custom: dict[str, CloudProviderConfig] = field(default_factory=dict)
 
 
+@dataclass(slots=True)
+class FusionSettings:
+    """Global fusion engine settings."""
+    default_strategy: str = "weighted_vote"
+    max_parallel_providers: int = 3
+    timeout_seconds: int = 120
+    provider_timeout: int = 60
+    semantic_cache_enabled: bool = True
+    cache_ttl_hours: int = 24
+    circuit_breaker: dict = field(default_factory=dict)  # {"failure_threshold": 5, "recovery_timeout": 30.0}
+    cost_tracker: CostTrackerConfig = field(default_factory=CostTrackerConfig)
+    model_router: dict = field(default_factory=lambda: {
+        "default_policy": "balanced",
+        "cost_quality_tradeoff": 7,
+        "exploration_rate": 0.1,
+        "ucb_c": 2.0,
+        "session_ttl_seconds": 300,
+        "persistence_path": "~/.hermes_fusion/router.json",
+    })
 @dataclass(slots=True)
 class ProvidersConfig:
     """All provider configurations."""
