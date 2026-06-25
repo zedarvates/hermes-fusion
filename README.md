@@ -186,3 +186,7 @@ MIT — See LICENSE for details.
 ## Author
 
 Sylvain Galliez (zedarvates) — Built for Hermes Agent ecosystem
+
+---
+
+[![Donate](https://img.shields.io/badge/☕%20Soutenir-BTC%20%7C%20ETH-orange)](DONATE.md)
